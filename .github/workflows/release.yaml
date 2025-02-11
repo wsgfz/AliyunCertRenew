@@ -12,7 +12,9 @@ on:
       - "go.sum"
       - ".github/workflows/*.yml"
 
-permissions: write-all
+permissions:
+  contents: write
+  id-token: write
 
 jobs:
   build:
@@ -70,7 +72,6 @@ jobs:
         run: |
           export _NAME=$GOOS-$GOARCH$GOARM
           echo "GOOS: $GOOS, GOARCH: $GOARCH, GOARM: $GOARM, RELEASE_NAME: $_NAME"
-          echo "::set-output name=ASSET_NAME::$_NAME"
           echo "ASSET_NAME=$_NAME" >> $GITHUB_ENV
 
       - name: Set up Go
@@ -97,10 +98,15 @@ jobs:
           pushd build_assets || exit 1
           zip -9vr ../AliyunCertRenew-$ASSET_NAME.zip .
           popd || exit 1
-      
+
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-get install gh
+
       - name: Upload release binary
         if: github.event_name == 'release'
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          ASSET_NAME: ${{ env.ASSET_NAME }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} AliyunCertRenew-${{ steps.get_filename.outputs.ASSET_NAME }}.zip
+          gh release upload ${{ github.event.release.tag_name }} AliyunCertRenew-${{ env.ASSET_NAME }}.zip
